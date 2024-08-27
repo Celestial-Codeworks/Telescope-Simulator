@@ -157,21 +157,21 @@ def alt_az_input_validation(alt, az):
     if not isinstance(alt, (float, int)):
         raise ValueError("Alt (Altitude) must be a number")
     if not (-75 <= alt <= 75):
-        raise ValueError("Alt (Altitude) must be between -90 and 90 degrees")
+        raise ValueError("Alt (Altitude) must be between -75 and 75 degrees")
     
     # az validation
     if not isinstance(az, (float, int)):
         raise ValueError("Az (Azimuth) must be a number")
     if not (-340 <= alt <= 340):
-        raise ValueError("Az (Azimuth) must be between -90 and 90 degrees")
+        raise ValueError("Az (Azimuth) must be between -340 and 340 degrees")
     
     return True # If user input passes validation
 
 def get_valid_alt_az():
     while True:
         try:
-            alt = float(input("Enter Alt (Altitude) degrees (-90 to 90): ")) # Input alt
-            az = float(input("Enter Az (Azimuth) degrees (0 to 360): ")) # Input az
+            alt = float(input("Enter Alt (Altitude) degrees (-75 to 75): ")) # Input alt
+            az = float(input("Enter Az (Azimuth) degrees (-340 to 340): ")) # Input az
 
             alt_az_input_validation(alt, az) # Validation for alt and az
             print("Valid Alt/Az input!") # For debuging
