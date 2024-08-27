@@ -63,7 +63,7 @@ def display_menu(menu_num):
     elif menu_num == 1: # Telescope Control Menu
         for i in TELESCOPE_CONTROL_MENU:
             print(i)
-    elif menu_num == 2: # Configure Settings Menu
+    elif menu_num == 2: # Configure Settings Menuf
         for i in CONFIG_SETTINGS_MENU:
             print(i)
     elif menu_num == 3: # Coordinate Menu
@@ -83,6 +83,7 @@ def telescope_control_functions(choice):
         ra = input("Enter Ra value: ")
         dec = input("Enter dec value: ")
         C.convert_radec_to_altaz(ra, dec)
+        print(C.convert_radec_to_altaz(ra, dec)) # Print the Alt and Az degrees
 
         # ADD FUNCTIONALITY TO MOVE TELESCOPE HERE
     elif choice == 3: # Tracking

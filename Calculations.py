@@ -107,20 +107,24 @@ def convert_altaz_to_radec(alt, az):
 
     return icrs_coords.ra.hourangle, icrs_coords.dec.degree
 
-def convert_radec_to_altaz(ra, dec, frame='icrs'):
+def convert_to_degrees(ra, dec=None, frame='icrs'): # Convert the Ra and Dec into degrees
     # Determine format and unit for RA/Dec
     if isinstance(ra, (float, int)) and isinstance(dec, (float, int)): # Degree format
-        icrs_coords = SkyCoord(ra, dec, frame=frame, unit='deg') 
+        icrs_coords = SkyCoord(ra, dec, frame=frame, unit='deg')
     elif isinstance(ra, str) and isinstance(dec, str):
         if "h" in ra or "d" in dec: # Sexagesimal format
             icrs_coords = SkyCoord(ra, dec, frame=frame) # Format like '00h42m30s' and '+41d12m00s'
         else:
-            icrs_coords = SkyCoord(ra, dec, frame=frame, unit=(u.hourangle, u.deg)) # Format like '00 42 30' and '+41 12 00', specify units explicitly
+            icrs_coords = SkyCoord(ra, dec, frame=frame, unit=(u.hourangle, u.deg)) # Format like '00 42 30' and '+41 12 00', specify units explicitly 
     elif isinstance(ra, str) and dec is None:
         icrs_coords = SkyCoord(ra, frame=frame, unit=(u.hourangle, u.deg)) # Single string input, e.g., '00:42.5 +41:12'
     else:
         raise ValueError("Unsupported RA/Dec format. Please provide RA and Dec in a supported format.")
 
+    # Return RA/Dec in degrees
+    return icrs_coords.ra.degree, icrs_coords.dec.degree
+
+def convert_degrees_to_altaz(ra_deg, dec_deg): # Takes the output from the convert_to_degrees method and convert it to Alt Az
     now = Time.now()  # Get current time
     latitude, longitude, elevation = get_location_and_elevation()
 
@@ -129,10 +133,17 @@ def convert_radec_to_altaz(ra, dec, frame='icrs'):
 
     observer_location = EarthLocation(lat=latitude * u.deg, lon=longitude * u.deg, height=elevation * u.m)  # Define the observer's location
 
+    icrs_coords = SkyCoord(ra_deg, dec_deg, frame='icrs', unit='deg')  # Create SkyCoord object with degrees
     altaz_frame = AltAz(obstime=now, location=observer_location)  # Define the AltAz frame
     altaz_coords = icrs_coords.transform_to(altaz_frame)  # Convert to AltAz
 
     return altaz_coords.alt.degree, altaz_coords.az.degree
+
+
+def convert_radec_to_altaz(ra, dec, frame='icrs'):
+    ra_deg, dec_deg = convert_to_degrees(ra, dec, frame) # Convert the Ra and Dec into degrees
+    
+    return convert_degrees_to_altaz(ra_deg, dec_deg) # Takes the output from the convert_to_degrees method and convert it to Alt Az
 
 def __main__():
     latitude, longitude, elevation = get_location_and_elevation()
