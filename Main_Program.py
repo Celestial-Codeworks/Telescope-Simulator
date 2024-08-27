@@ -162,7 +162,7 @@ def alt_az_input_validation(alt, az):
     # az validation
     if not isinstance(az, (float, int)):
         raise ValueError("Az (Azimuth) must be a number")
-    if not (-340 <= alt <= 340):
+    if not (-340 <= az <= 340):
         raise ValueError("Az (Azimuth) must be between -340 and 340 degrees")
     
     return True # If user input passes validation
