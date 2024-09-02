@@ -1,7 +1,0 @@
-1. Download and install CoppeliaSim Edu from their official website (https://www.coppeliarobotics.com/).
-
-2. install dependencies:
-
-pip install pyzmq cbor2
-
-3. 
