@@ -1,0 +1,14 @@
+1. Download and install CoppeliaSim Edu from their official website (https://www.coppeliarobotics.com/).
+
+2. install dependencies:
+
+pip install pyzmq cbor2 (If anyone finds that a required dependency for this simulation is not documented here, please add it)
+
+3. In CoppeliaSim Edu, navigate to File -> Open scene...
+
+Open the "Radio Telescope Scene.ttt" file located in the "Virtual-Prototype-Scene-and-Documentation" folder on the GitHub repository.
+
+4. Press the play button in CoppeliaSim Edu.
+
+5. Run and navigate the radio telescope orientation software as you wish and watch as the virtual radio telescope prototype move during celestial observations.
+
