@@ -51,19 +51,24 @@ def is_valid_directory(dir):
     return True, None  # No error message since the directory is valid
 
 def write_log(user, command, description):
-    if not isinstance(user, str) or not user.strip():
-        raise ValueError("User must be a non-empty string.")
-    if not isinstance(command, str) or not command.strip():
-        raise ValueError("Command must be a non-empty string.")
-    if not isinstance(description, str):
-        raise ValueError("Description must be a string.")
-    
+    record = ""
     time = datetime.now().strftime("%H:%M:%S")
     date = datetime.now().date()
-    
-    record = f"{date}\t\t{time}\t\t{user}\t\t{command}\t\t{description}"
 
-    append_to_file(os.path.join(get_script_path(), "Data", "Logs.txt"), record)
+    record = str(date) + "\t\t" + time + "\t\t" + user + "\t\t" + command + "\t\t" + description
+
+    append_to_file(os.path.join(get_script_path(), "Resources", "Logs.txt"), record)
+
+def display_logs():
+    file_path = os.path.join(get_script_path(), 'Resources', 'Logs.txt')
+
+    # Open the file in read mode
+    with open(file_path, 'r') as file:
+        # Read the contents of the file
+        contents = file.read()
+
+    # Display the contents in the terminal
+    print(contents)
 
 def append_to_file(file_path, content): # content - String variable 
     if not isinstance(file_path, str) or not file_path.strip():
@@ -86,10 +91,7 @@ def append_to_file(file_path, content): # content - String variable
         print(f"An error occurred: {e}")
 
 def __main__():
-    try:
-        write_log("Francois", "Rest", "Enter telescope rest mode")
-    except ValueError as e:
-        print(f"Validation Error: {e}")
+    pass
 
 if __name__ == '__main__':
     __main__()

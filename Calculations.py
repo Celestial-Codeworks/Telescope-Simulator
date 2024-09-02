@@ -1,71 +1,165 @@
+import time, requests, geocoder, astropy.units as u
 
-import os
-import sys
-import time
 from astropy.coordinates import SkyCoord, EarthLocation, AltAz, ICRS
 from astropy.time import Time
-import astropy.units as u
+from astroquery.ipac.ned import Ned
 
-# Convert a celestial coordinate to altitude and azimuth in degrees
-def celestial_to_altaz(sky_coord, location, time):
-    if not isinstance(sky_coord, SkyCoord):
-        raise TypeError("The sky coordinate must be a valid celestial coordinate.")
-    if not isinstance(location, EarthLocation):
-        raise TypeError("The location must be a valid geographic location.")
-    if not isinstance(time, Time):
-        raise TypeError("The time must be a valid time.")
+def get_location_and_elevation(method = 'stored'):
+    latitude, longitude, elevation = None, None, None
+    retries = 3
+    delay = 3
+    
+    if method == 'ip':
+        g = geocoder.ip('me')
+        
+        if g.ok:
+            latitude, longitude = g.latlng
+            
+            # Retry mechanism for elevation API
+            for attempt in range(retries):
+                try:
+                    response = requests.get(f'https://api.open-elevation.com/api/v1/lookup?locations={latitude},{longitude}')
+                    response.raise_for_status()
+                    
+                    elevation_data = response.json()
+                    if 'results' in elevation_data and len(elevation_data['results']) > 0:
+                        elevation = elevation_data['results'][0]['elevation']
+                        break
+                    else:
+                        print("No elevation data found in the response.")
+                except requests.RequestException as e:
+                    print(f"Attempt {attempt + 1} failed: {e}")
+                    if attempt < retries - 1:
+                        time.sleep(delay)  # Wait before retrying
+            else:
+                print("Failed to fetch elevation data after retries.")
+        else:
+            print("Error retrieving IP-based location.")
+    else: # Stored values
+        latitude, longitude, elevation = -26.7167, 27.1, 1100
+    
+    return latitude, longitude, elevation
 
-    altaz_frame = AltAz(obstime=time, location=location)  # Create an AltAz frame at the specified location and time
-    altaz_coord = sky_coord.transform_to(altaz_frame)  # Transform the celestial coordinate to the AltAz frame
+def get_celestial_object_details(code):
+    # Query NED for the celestial object
+    result = Ned.query_object(code)
+    
+    # Check if the result is not empty
+    if result is not None and len(result) > 0:
+        # Get the first result (assuming the first result is the desired one)
+        obj = result[0]
+        code = code  
+        name = obj['Object Name']
+        ra = obj['RA']
+        dec = obj['DEC']
+        
+        return code, name, ra, dec
+    else:
+        return None, None, None, None
 
-    # Extract and return the altitude and azimuth in degrees
-    altitude = altaz_coord.alt.degree
-    azimuth = altaz_coord.az.degree
+def list_celestial_objects_in_region(ra, dec, radius=0.1):
+    frame = 'icrs'
 
-    return altitude, azimuth
+    try:
+        # Determine format and unit for RA/Dec
+        if isinstance(ra, (float, int)) and isinstance(dec, (float, int)): # Degree format
+            icrs_coords = SkyCoord(ra, dec, frame=frame, unit='deg') 
+        elif isinstance(ra, str) and isinstance(dec, str):
+            if "h" in ra or "d" in dec: # Sexagesimal format
+                icrs_coords = SkyCoord(ra, dec, frame=frame) # Format like '00h42m30s' and '+41d12m00s'
+            else:
+                icrs_coords = SkyCoord(ra, dec, frame=frame, unit=(u.hourangle, u.deg)) # Format like '00 42 30' and '+41 12 00', specify units explicitly
+        elif isinstance(ra, str) and dec is None:
+            icrs_coords = SkyCoord(ra, frame=frame, unit=(u.hourangle, u.deg)) # Single string input, e.g., '00:42.5 +41:12'
+        else:
+            raise ValueError("Unsupported RA/Dec format. Please provide RA and Dec in a supported format.")
+        
+        # Query NED for objects within the specified region
+        result = Ned.query_region(icrs_coords, radius=radius * u.deg)
+        
+        # Check if results are found
+        if result is not None and len(result) > 0:
+            # Display the column names to understand the structure
+            print("Available columns:", result.colnames)
+            
+            # Loop through the results and print relevant details
+            for obj in result:
+                # Use available columns from result
+                name = obj.get('Object Name', 'Unknown')
+                print(f"Name: {name}")
+        else:
+            print("No celestial objects found in the specified region.")
+    except Exception as e:
+        print(f"Error querying region: {e}")
 
-# Converts alt/az degrees to a celestial reference frame
-def altaz_to_celestial(alt_deg, az_deg, location, time):
-    if not isinstance(alt_deg, (int, float)):
-        raise TypeError("The altitude must be a number representing degrees.")
-    if not isinstance(az_deg, (int, float)):
-        raise TypeError("The azimuth must be a number representing degrees.")
-    if not isinstance(location, EarthLocation):
-        raise TypeError("The location must be a valid geographic location.")
-    if not isinstance(time, Time):
-        raise TypeError("The time must be a valid time.")
+def convert_altaz_to_radec(alt, az):
+    now = Time.now()  # Get current time
+    latitude, longitude, elevation = get_location_and_elevation()
 
-    alt_az_coords = AltAz(alt=alt_deg * u.deg, az=az_deg * u.deg, location=location, obstime=time)  # Create AltAz frame with given parameters
-    icrs_coords = alt_az_coords.transform_to(ICRS())  # Transform to ICRS (International Celestial Reference System) frame 
+    if latitude is None or longitude is None or elevation is None:
+        raise ValueError("Could not retrieve location or elevation data.")
 
-    return icrs_coords
+    observer_location = EarthLocation(lat=latitude * u.deg, lon=longitude * u.deg, height=elevation * u.m)  # Define the observer's location
+    altaz_frame = AltAz(obstime=now, location=observer_location)  # Define the AltAz frame
+
+    altaz_coords = SkyCoord(alt=alt * u.deg, az=az * u.deg, frame=altaz_frame)  # Create an AltAz coordinate object
+    icrs_coords = altaz_coords.transform_to(ICRS)  # Convert to ICRS (RA and Dec)
+
+    return icrs_coords.ra.hourangle, icrs_coords.dec.degree
+
+def convert_to_degrees(ra, dec=None, frame='icrs'): # Convert the Ra and Dec into degrees
+    # Determine format and unit for RA/Dec
+    if isinstance(ra, (float, int)) and isinstance(dec, (float, int)): # Degree format
+        icrs_coords = SkyCoord(ra, dec, frame=frame, unit='deg')
+    elif isinstance(ra, str) and isinstance(dec, str):
+        if "h" in ra or "d" in dec: # Sexagesimal format
+            icrs_coords = SkyCoord(ra, dec, frame=frame) # Format like '00h42m30s' and '+41d12m00s'
+        else:
+            icrs_coords = SkyCoord(ra, dec, frame=frame, unit=(u.hourangle, u.deg)) # Format like '00 42 30' and '+41 12 00', specify units explicitly 
+    elif isinstance(ra, str) and dec is None:
+        icrs_coords = SkyCoord(ra, frame=frame, unit=(u.hourangle, u.deg)) # Single string input, e.g., '00:42.5 +41:12'
+    else:
+        raise ValueError("Unsupported RA/Dec format. Please provide RA and Dec in a supported format.")
+
+    # Return RA/Dec in degrees
+    return icrs_coords.ra.degree, icrs_coords.dec.degree
+
+def convert_degrees_to_altaz(ra_deg, dec_deg): # Takes the output from the convert_to_degrees method and convert it to Alt Az
+    now = Time.now()  # Get current time
+    latitude, longitude, elevation = get_location_and_elevation()
+
+    if latitude is None or longitude is None or elevation is None:
+        raise ValueError("Could not retrieve location or elevation data.")
+
+    observer_location = EarthLocation(lat=latitude * u.deg, lon=longitude * u.deg, height=elevation * u.m)  # Define the observer's location
+
+    icrs_coords = SkyCoord(ra_deg, dec_deg, frame='icrs', unit='deg')  # Create SkyCoord object with degrees
+    altaz_frame = AltAz(obstime=now, location=observer_location)  # Define the AltAz frame
+    altaz_coords = icrs_coords.transform_to(altaz_frame)  # Convert to AltAz
+
+    return altaz_coords.alt.degree, altaz_coords.az.degree
+
+
+def convert_radec_to_altaz(ra, dec, frame='icrs'):
+    ra_deg, dec_deg = convert_to_degrees(ra, dec, frame) # Convert the Ra and Dec into degrees
+    
+    return convert_degrees_to_altaz(ra_deg, dec_deg) # Takes the output from the convert_to_degrees method and convert it to Alt Az
 
 def __main__():
-    try:
-        # Convert celestial reference frame to alt/az degrees
-        observing_location = EarthLocation(lat='-26.111111deg', lon='27.944444deg', height=1500*u.m)
-        observing_time = Time.now()
-        ra = 16 * u.hourangle  # Right Ascension in hours
-        dec = -23 * u.deg      # Declination in degrees
-        sky_coord = SkyCoord(ra=ra, dec=dec, frame='icrs')  # 'icrs' is the International Celestial Reference System
-        alt_deg, az_deg = celestial_to_altaz(sky_coord, observing_location, observing_time)
+    latitude, longitude, elevation = get_location_and_elevation()
+    object_code, object_name, ra, dec = get_celestial_object_details("M31") # Andromeda Galaxy
+    alt_converted, az_converted = convert_radec_to_altaz(ra, dec)
+    ra_converted, dec_converted = convert_altaz_to_radec(alt_converted, az_converted)
 
-        print(f"Altitude: {alt_deg:.2f} degrees")
-        print(f"Azimuth: {az_deg:.2f} degrees")
-
-        # Convert alt/az degrees to a celestial frame
-        latitude = -26.1561
-        longitude = 27.8719
-        elevation = 1735  # meters
-        location = EarthLocation(lat=latitude*u.deg, lon=longitude*u.deg, height=elevation*u.m)
-        observation_time = Time.now()
-        celestial_coords = altaz_to_celestial(alt_deg, az_deg, location, observation_time)  # Convert to celestial coordinates
-
-        print(celestial_coords)
+    print(f"Current Location:  Latitude: {latitude}  Longitude: {longitude}  Elevation: {elevation}")
+    print(f"Celestial Object Details:  Code: {object_code}  Name: {object_name}  RA: {ra}  DEC: {dec}")
+    print(f"radec converted to alt and az:  ALT: {alt_converted}  AZ: {az_converted}")
+    print(f"Altaz converted to ra and dec:  RA: {ra_converted}  DEC: {dec_converted}")
+    print("\n")
+    list_celestial_objects_in_region(ra, dec, radius = 0.1)
 
     except Exception as e:
         print(f"An error occurred: {e}")
 
 if __name__ == '__main__':
     __main__()
-
