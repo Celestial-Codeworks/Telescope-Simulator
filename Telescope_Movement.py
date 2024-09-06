@@ -1,4 +1,5 @@
-import time, keyboard, Calculations as C
+import time, keyboard, Calculations as C, System_Config
+from System_Config import config
 
 # Imports for CoppeliaSim simulation:
 import sim
@@ -6,11 +7,11 @@ import time
 import math
 
 # Telescope limit degrees
-ALTITUDE_LIMITS = (-75, 75) 
-AZIMUTH_LIMITS = (-120, 120)
+ALTITUDE_LIMITS = config.get('altitude_limits')
+AZIMUTH_LIMITS = config.get('azimuth_limits')
 
 # Configuration variables
-PING_RA_DEC = 3 # Ping ra and dec values every # seconds
+PING_RA_DEC = config.get('celestial_ping_time') # Ping ra and dec values every # seconds
 
 # Global variable for keeping track of telescope connection
 clientID = None
@@ -131,36 +132,7 @@ def track_celestial_object(code):
         print("Tracking stopped by user.")
 
 def __main__():
-    track_celestial_object("M87")
+    track_celestial_object("M31")
 
 if __name__ == '__main__':
     __main__()
-
-
-
-
-
-
-# import RPi.GPIO as GPIO
-# from RpiMotorLib import RpiMotorLib
-# import time
-
-# direction= 22 # Direction (DIR) GPIO Pin
-# step = 23 # Step GPIO Pin
-# EN_pin = 24 # enable pin (LOW to enable)
-
-# mymotortest = RpiMotorLib.A4988Nema(direction, step, (21,21,21), "DRV8825")
-# GPIO.setup(EN_pin,GPIO.OUT) # set enable pin as output
-
-# dir_array = [False,True]
-# GPIO.output(EN_pin,GPIO.LOW) # pull enable to low to enable motor
-# for ii in range(10):
-#     mymotortest.motor_go(dir_array[ii%2], # False=Clockwise, True=Counterclockwise
-#                         "Full" , # Step type (Full,Half,1/4,1/8,1/16,1/32)
-#                         200, # number of steps
-#                         .0005, # step delay [sec]
-#                         False, # True = print verbose output 
-#                         .05) # initial delay [sec]
-#     time.sleep(1)
-
-# GPIO.cleanup() # clear GPIO allocations after run
