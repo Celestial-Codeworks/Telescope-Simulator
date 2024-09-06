@@ -1,0 +1,14 @@
+{
+    "latitude": -26.7167,
+    "longitude": 27.1,
+    "elevation": 1101.0,
+    "celestial_ping_time": 3,
+    "altitude_limits": [
+        -90.0,
+        90.0
+    ],
+    "azimuth_limits": [
+        120.0,
+        360.0
+    ]
+}
