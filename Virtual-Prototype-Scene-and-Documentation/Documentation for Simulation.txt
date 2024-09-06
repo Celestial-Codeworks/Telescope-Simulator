@@ -17,5 +17,6 @@ Open the "Radio Telescope Scene.ttt" file located in the "Virtual-Prototype-Scen
 EXTRA INFO:
 To setup the communication between Python and CoppeliaSim: https://www.youtube.com/watch?v=SQont-mTnfM&t=588s 
 
-Note: The various files mentioned in the video are under programming > legacyRemoteApi > remoteApiBindings. Also, remoteApi.dll is for Windows and remoteApi.so is for Ubunto 20.4.
+Note: The various files mentioned in the video are under programming > legacyRemoteApi > remoteApiBindings. 
+Also, remoteApi.dll is for Windows and remoteApi.so is for Ubunto 20.4.
 
