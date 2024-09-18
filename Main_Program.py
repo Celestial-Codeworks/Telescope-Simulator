@@ -3,7 +3,9 @@ from System_Config import config
 import getpass, os
 
 # File where credentials are stored
-CREDENTIALS_FILE = os.path.join("Resources", "credentials.txt")
+# Change the file directory to where you have saved Telescope-Simulator/Resources
+# CREDENTIALS_FILE = os.path.join("Resources", "credentials.txt")
+CREDENTIALS_FILE = os.path.join("c:/Users/User/Desktop/Code/Telescope-Simulator/Resources", "credentials.txt")
 
 COMMAND_DESCRIPTIONS = {
     "Telescope Control": "Display menu responsible for telescope control functions.",
@@ -84,12 +86,12 @@ def handle_menu_choice(menu_num, choice):
             
             TM.move_tel(alt, az)
         elif choice == 3: # Tracking
-               celestial_code = get_valid_celestial_code()
+            celestial_code = get_valid_celestial_code()
 
-               TM.track_celestial_object(celestial_code)
+            TM.track_celestial_object(celestial_code)
 
         elif choice == 4: # Rest Mode
-               TM.telescope_rest()
+            TM.telescope_rest()
 
     elif menu_num == 2: # Configure Settings Menu
         if choice == 1: # Change Telescope Location
@@ -132,13 +134,13 @@ def handle_menu_choice(menu_num, choice):
 
     elif menu_num == 3: # Coordinate System
         if choice == 1: # Convert Alt & Az to Ra & Dec
-            alt = float(input("Enter altitude degrees: "))
-            az = float(input("Enter azimuth degrees: "))
+            alt, az = get_valid_alt_az()
+            
             ra, dec = C.convert_altaz_to_radec(alt, az)
             print(f"AltAz converted to RaDec: RA: {ra} DEC: {dec}")
         elif choice == 2: # Convert Ra & Dec to Alt & Az
-            ra = input("Enter Ra value: ")
-            dec = input("Enter dec value: ")
+            ra, dec = get_valid_ra_dec()
+
             alt, az = C.convert_radec_to_altaz(ra, dec)
             print(f"RaDec converted to AltAz: ALT: {alt} AZ: {az}")
     elif menu_num == 4: # Display Data

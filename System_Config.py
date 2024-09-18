@@ -1,6 +1,8 @@
 import json, os
 
-CONFIG_FILE = os.path.join("Resources", "config.json")
+# Change the file directory to where you have saved Telescope-Simulator/Resources
+# CONFIG_FILE = os.path.join("Resources", "config.json")
+CONFIG_FILE = os.path.join("c:/Users/User/Desktop/Code/Telescope-Simulator/Resources", "config.json")
 
 class Config:
     def __init__(self, config_file=CONFIG_FILE):
